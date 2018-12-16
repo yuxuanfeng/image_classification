@@ -7,8 +7,8 @@ import numpy as np
 raw_image_set = './dataset'
 new_image_set = './image_set'
 feature_set = './feature_set'
-train_data_set = './train_data'
-test_data_set = './test_data'
+train_data_file = './train_data'
+test_data_file = './test_data'
 
 image_list = './image_list'
 train_image_list = './train_image_list'
@@ -22,7 +22,7 @@ is_run_step1 = False
 is_run_step2 = False
 is_run_step3 = False
 is_run_step4 = False
-is_run_step5 = False
+is_run_step5 = True
 is_run_step6 = True
 
 MY_ZERO_VALUE = 1e-5
@@ -34,12 +34,6 @@ def prepare_workspace():
 
     if not os.path.isdir(feature_set):
         os.mkdir(feature_set)
-
-    if not os.path.isdir(train_data_set):
-        os.mkdir(train_data_set)
-
-    if not os.path.isdir(test_data_set):
-        os.mkdir(test_data_set)
 
     if not os.path.isfile(image_list):
         cmd_str = 'touch ' + image_list
@@ -55,6 +49,18 @@ def prepare_workspace():
 
     if not os.path.isfile(test_image_list):
         cmd_str = 'touch ' + test_image_list
+        if sp.call(cmd_str, shell=True) != 0:
+            print('Fail to run ' + cmd_str)
+            sys.exit(-1)
+
+    if not os.path.isfile(train_data_file):
+        cmd_str = 'touch ' + train_data_file
+        if sp.call(cmd_str, shell=True) != 0:
+            print('Fail to run ' + cmd_str)
+            sys.exit(-1)
+
+    if not os.path.isfile(test_data_file):
+        cmd_str = 'touch ' + test_data_file
         if sp.call(cmd_str, shell=True) != 0:
             print('Fail to run ' + cmd_str)
             sys.exit(-1)
@@ -83,11 +89,11 @@ def image_class_demo():
 
     print('[step-5] train image classification model')
     if is_run_step5:
-        train_algo_model(train_image_list, feature_set, train_data_set)
+        train_algo_model(train_image_list, feature_set, train_data_file)
 
     print('[step-6] test image classification acc')
     if is_run_step6:
-        test_algo_model(test_image_list, feature_set, test_data_set)
+        test_algo_model(test_image_list, feature_set, test_data_file)
 
 
 def get_image_list(folder_name, image_list):
