@@ -2,36 +2,25 @@ import sys
 import os
 import time
 import subprocess as sp
-#import deep_feature as df
+import deep_feature as df
 import numpy as np
 
-from multiprocessing import Pool
-from multiprocessing.dummy import Pool as ThreadPool
+raw_image_set = './real_test'
+new_image_set = './real_set_image'
+feature_set = './real_set_feature'
+test_file = './real_image_feature'
 
-raw_image_set = './dataset'
-new_image_set = './image_set'
-feature_set = './feature_set'
-train_data_file = './train_data'
-test_data_file = './test_data'
-
-image_list = './image_list'
-train_image_list = './train_image_list'
-test_image_list = './test_image_list'
-train_data_ratio = 0.6
-
+image_list = './real_image_list'
 image_type_list = ['png', 'jpg', 'jpeg']
 discard_file_name = 'DS_Store'
 
-is_run_step1 = False
-is_run_step2 = False
+is_run_step1 = True
+is_run_step2 = True
 is_run_step3 = True
-is_run_step4 = False
-is_run_step5 = False
-is_run_step6 = False
+is_run_step4 = True
 
 MY_ZERO_VALUE = 1e-5
 
-# feature_extractor = df.DeepFeature()
 
 def prepare_workspace():
     if not os.path.isdir(new_image_set):
@@ -46,32 +35,8 @@ def prepare_workspace():
             print('Fail to run ' + cmd_str)
             sys.exit(-1)
 
-    if not os.path.isfile(train_image_list):
-        cmd_str = 'touch ' + train_image_list
-        if sp.call(cmd_str, shell=True) != 0:
-            print('Fail to run ' + cmd_str)
-            sys.exit(-1)
 
-    if not os.path.isfile(test_image_list):
-        cmd_str = 'touch ' + test_image_list
-        if sp.call(cmd_str, shell=True) != 0:
-            print('Fail to run ' + cmd_str)
-            sys.exit(-1)
-
-    if not os.path.isfile(train_data_file):
-        cmd_str = 'touch ' + train_data_file
-        if sp.call(cmd_str, shell=True) != 0:
-            print('Fail to run ' + cmd_str)
-            sys.exit(-1)
-
-    if not os.path.isfile(test_data_file):
-        cmd_str = 'touch ' + test_data_file
-        if sp.call(cmd_str, shell=True) != 0:
-            print('Fail to run ' + cmd_str)
-            sys.exit(-1)
-
-
-def image_class_demo():
+def image_class_real():
     print('image class recognition demo ... \n')
     prepare_workspace()
 
@@ -87,18 +52,9 @@ def image_class_demo():
     if is_run_step3:
         get_image_feature(image_list, feature_set)
 
-    print('[step-4] split image into train and test set')
+    print('[step-4] test image classification acc')
     if is_run_step4:
-        split_train_test(image_list, train_image_list,
-                         test_image_list, train_data_ratio)
-
-    print('[step-5] train image classification model')
-    if is_run_step5:
-        train_algo_model(train_image_list, feature_set, train_data_file)
-
-    print('[step-6] test image classification acc')
-    if is_run_step6:
-        test_algo_model(test_image_list, feature_set, test_data_file)
+        test_algo_model(image_list, feature_set, test_file)
 
 
 def get_image_list(folder_name, image_list):
@@ -145,7 +101,6 @@ def change_image_name(org_image_set, tag_image_set):
 
 
 def get_image_feature(image_list, feature_set):
-    '''
     feature_extractor = df.DeepFeature()
 
     with open(image_list, 'r') as fid:
@@ -155,17 +110,7 @@ def get_image_feature(image_list, feature_set):
             image_feature = feature_extractor.get_feature(full_name)
             save_file = generate_save_file(feature_set, full_name)
             save_image_feature(image_feature, save_file)
-    '''
-    image_name_list = []
-    with open(image_list, 'r') as fid:
-        for full_name in fid.readlines():
-            full_name = full_name.strip('\n')
-            image_name_list.append(full_name)
-    pool = Pool(2)
-    #pool = ThreadPool(2)
-    pool.map(process_image_feature, image_name_list)
-    pool.close()
-    pool.join()
+
 
 def process_image_feature(full_name):
     import deep_feature as df
@@ -202,56 +147,6 @@ def generate_save_file(feature_set, full_name):
         os.system('touch ' + save_name)
     return save_name
 
-
-def split_train_test(image_list_file, train_list_file, test_list_file, train_ratio):
-    # read all images name
-    with open(image_list_file, 'r') as fid:
-        image_list = fid.readlines()
-
-    class_dict = {}
-    for image_name in image_list:
-        fields = image_name.split('/')
-        class_name = fields[2]
-        if class_name in class_dict:
-            class_dict[class_name].append(image_name)
-        else:
-            class_dict[class_name] = [image_name]
-    train_image_list = []
-    test_image_list = []
-    for class_name in class_dict:
-        image_name_list = class_dict[class_name]
-        image_count = len(image_name_list)
-        train_count = int(image_count * train_ratio)
-        train_image_list += image_name_list[0:train_count]
-        test_image_list += image_name_list[train_count:]
-    write_list_to_file(train_image_list, train_list_file)
-    write_list_to_file(test_image_list, test_list_file)
-
-
-def write_list_to_file(data_list, file_name):
-    with open(file_name, 'w+') as fid:
-        for line in data_list:
-            line = line.strip('\n')
-            fid.write(line + '\n')
-
-
-def train_algo_model(train_image_file_list, feature_folder, train_data_file):
-    # step-1: build feature, label pair data
-    print('step-1: build feature label pair data...')
-    train_image_list = read_name_list_file(train_image_file_list)
-    train_feature_file_list = get_feature_file(train_image_list, feature_folder)
-    build_svm_data(train_feature_file_list, train_data_file)
-
-    # step-2: train svm algorithm model
-    print('step-2: train svm algorithm model...')
-
-    # parameter search
-    # os.system('./liblinear/train -s 0 ' + '-C -v 5 -e 0.001 ' + train_data_file + ' trained_class_model')
-    # os.system('./liblinear/train -s 0 ' + '-c 0.25 -e 0.001 ' + train_data_file + ' trained_class_model')
-    cmd_str = './liblinear/train -s 0 ' + '-c 0.25 -e 0.001 ' + train_data_file + ' trained_class_model'
-    if sp.call(cmd_str, shell=True) != 0:
-        print('Fail to run ' + cmd_str)
-        sys.exit(-1)
 
 def test_algo_model(test_image_file_list, feature_folder, test_data_file):
     # step-1: build feature, label pair data
@@ -317,7 +212,7 @@ def convert_dense_to_sparse(dense_list):
 
 if __name__ == '__main__':
     start_time = time.time()
-    image_class_demo()
+    image_class_real()
     print('all steps have finished!')
     stop_time = time.time()
     print('Total consume time:' + str(stop_time - start_time))

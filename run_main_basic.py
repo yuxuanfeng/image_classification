@@ -2,11 +2,8 @@ import sys
 import os
 import time
 import subprocess as sp
-#import deep_feature as df
+import deep_feature as df
 import numpy as np
-
-from multiprocessing import Pool
-from multiprocessing.dummy import Pool as ThreadPool
 
 raw_image_set = './dataset'
 new_image_set = './image_set'
@@ -31,7 +28,6 @@ is_run_step6 = False
 
 MY_ZERO_VALUE = 1e-5
 
-# feature_extractor = df.DeepFeature()
 
 def prepare_workspace():
     if not os.path.isdir(new_image_set):
@@ -145,7 +141,6 @@ def change_image_name(org_image_set, tag_image_set):
 
 
 def get_image_feature(image_list, feature_set):
-    '''
     feature_extractor = df.DeepFeature()
 
     with open(image_list, 'r') as fid:
@@ -161,19 +156,14 @@ def get_image_feature(image_list, feature_set):
         for full_name in fid.readlines():
             full_name = full_name.strip('\n')
             image_name_list.append(full_name)
-    pool = Pool(2)
-    #pool = ThreadPool(2)
-    pool.map(process_image_feature, image_name_list)
-    pool.close()
-    pool.join()
+    result = map(process_image_feature, image_name_list)
+    '''
 
 def process_image_feature(full_name):
-    import deep_feature as df
     feature_extractor = df.DeepFeature()
     print('full_name:' + full_name)
     image_feature = feature_extractor.get_feature(full_name)
     save_file = generate_save_file(feature_set, full_name)
-    #save_file = generate_save_file('./feature_set', full_name)
     save_image_feature(image_feature, save_file)
 
 
